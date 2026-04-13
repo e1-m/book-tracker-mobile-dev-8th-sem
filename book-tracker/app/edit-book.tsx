@@ -46,13 +46,185 @@ const MOCK_BOOK: Book = {
 
 const SUGGESTED_TAGS = ['Tag 1', 'Tag 2', 'Tag 3', 'Tag 4'];
 
+function EditHeader() {
+    return (
+        <View style={styles.headerRow}>
+            <Pressable style={styles.iconButton} onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={20} color="#222" />
+            </Pressable>
+
+            <Text style={styles.headerTitle}>Edit Book</Text>
+
+            <Pressable style={styles.deleteButton}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+            </Pressable>
+        </View>
+    );
+}
+
+function BookMainInfo({ book }: { book: Book }) {
+    return (
+        <>
+            <View style={styles.topSection}>
+                <View style={styles.cover} />
+
+                <View style={styles.inputsColumn}>
+                    <TextInput
+                        value={book.title}
+                        style={styles.input}
+                        placeholder="Title"
+                    />
+                    <TextInput
+                        value={book.author}
+                        style={styles.input}
+                        placeholder="Author"
+                    />
+                    <TextInput
+                        value={String(book.publishYear)}
+                        style={[styles.input, styles.shortInput]}
+                        placeholder="Year"
+                    />
+                </View>
+            </View>
+
+            <TextInput
+                value={book.description}
+                style={styles.descriptionInput}
+                placeholder="Description"
+                multiline
+                textAlignVertical="top"
+            />
+        </>
+    );
+}
+
+function StatusSection({
+    isOpen,
+    selectedStatusLabel,
+    selectedStatus,
+    onToggle,
+    onSelect,
+}: {
+    isOpen: boolean;
+    selectedStatusLabel: string;
+    selectedStatus: BookStatus;
+    onToggle: () => void;
+    onSelect: (value: BookStatus) => void;
+}) {
+    return (
+        <>
+            <Text style={styles.sectionTitle}>Status</Text>
+
+            <View style={styles.dropdownWrapper}>
+                <Pressable style={styles.selectBox} onPress={onToggle}>
+                    <Text style={styles.selectText}>{selectedStatusLabel}</Text>
+                    <Ionicons
+                        name={isOpen ? 'chevron-up' : 'chevron-down'}
+                        size={18}
+                        color="#444"
+                    />
+                </Pressable>
+
+                {isOpen && (
+                    <View style={styles.dropdownMenu}>
+                        {STATUS_OPTIONS.map((option) => (
+                            <Pressable
+                                key={option.value}
+                                onPress={() => onSelect(option.value)}
+                                style={({ pressed, hovered }) => [
+                                    styles.dropdownItem,
+                                    selectedStatus === option.value && styles.dropdownItemActive,
+                                    hovered && styles.dropdownItemHover,
+                                    pressed && styles.dropdownItemPressed,
+                                ]}
+                            >
+                                <Text style={styles.dropdownItemText}>{option.label}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                )}
+            </View>
+        </>
+    );
+}
+
+function PageSection({ book }: { book: Book }) {
+    const progress = book.currentPage / book.totalPages;
+
+    return (
+        <>
+            <View style={styles.pageRow}>
+                <Text style={styles.pageLabel}>Page</Text>
+                <Text style={styles.pageValue}>
+                    {book.currentPage} / {book.totalPages}
+                </Text>
+            </View>
+
+            <View style={styles.sliderTrack}>
+                <View style={[styles.sliderFill, { width: `${progress * 100}%` }]} />
+                <View style={[styles.sliderThumb, { left: `${progress * 100}%` }]} />
+            </View>
+
+            <View style={styles.progressRow}>
+                <Text style={styles.progressLabel}>Progress</Text>
+
+                <View style={styles.pageInputGroup}>
+                    <Text style={styles.progressLabel}>P.</Text>
+                    <TextInput
+                        value={String(book.currentPage)}
+                        style={styles.progressSmallInput}
+                        keyboardType="numeric"
+                    />
+                </View>
+            </View>
+        </>
+    );
+}
+
+function TagsSection({
+    selectedTags,
+    suggestedTags,
+}: {
+    selectedTags: string[];
+    suggestedTags: string[];
+}) {
+    return (
+        <>
+            <Text style={styles.sectionTitle}>Tags</Text>
+
+            <View style={styles.addTagRow}>
+                <TextInput placeholder="Add tag" style={styles.addTagInput} />
+                <Pressable style={styles.plusButton}>
+                    <Ionicons name="add" size={22} color="#222" />
+                </Pressable>
+            </View>
+
+            <View style={styles.selectedTagsBox}>
+                {selectedTags.map((tag) => (
+                    <View key={tag} style={styles.selectedTagChip}>
+                        <Text style={styles.selectedTagText}>{tag}</Text>
+                        <Ionicons name="close" size={14} color="#222" />
+                    </View>
+                ))}
+            </View>
+
+            <View style={styles.suggestedTagsWrap}>
+                {suggestedTags.map((tag) => (
+                    <Pressable key={tag} style={styles.suggestedTagChip}>
+                        <Text style={styles.suggestedTagText}>{tag}</Text>
+                        <Ionicons name="add" size={14} color="#222" />
+                    </Pressable>
+                ))}
+            </View>
+        </>
+    );
+}
+
 export default function EditBookScreen() {
     const [isStatusOpen, setIsStatusOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState<BookStatus>(
         MOCK_BOOK.status
     );
-
-    const progress = MOCK_BOOK.currentPage / MOCK_BOOK.totalPages;
 
     const selectedStatusLabel =
         STATUS_OPTIONS.find((option) => option.value === selectedStatus)?.label ||
@@ -61,133 +233,27 @@ export default function EditBookScreen() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.headerRow}>
-                    <Pressable style={styles.iconButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={20} color="#222" />
-                    </Pressable>
+                <EditHeader />
 
-                    <Text style={styles.headerTitle}>Edit Book</Text>
+                <BookMainInfo book={MOCK_BOOK} />
 
-                    <Pressable style={styles.deleteButton}>
-                        <Text style={styles.deleteButtonText}>Delete</Text>
-                    </Pressable>
-                </View>
-
-                <View style={styles.topSection}>
-                    <View style={styles.cover} />
-
-                    <View style={styles.inputsColumn}>
-                        <TextInput
-                            value={MOCK_BOOK.title}
-                            style={styles.input}
-                            placeholder="Title"
-                        />
-                        <TextInput
-                            value={MOCK_BOOK.author}
-                            style={styles.input}
-                            placeholder="Author"
-                        />
-                        <TextInput
-                            value={String(MOCK_BOOK.publishYear)}
-                            style={[styles.input, styles.shortInput]}
-                            placeholder="Year"
-                        />
-                    </View>
-                </View>
-
-                <TextInput
-                    value={MOCK_BOOK.description}
-                    style={styles.descriptionInput}
-                    placeholder="Description"
-                    multiline
-                    textAlignVertical="top"
+                <StatusSection
+                    isOpen={isStatusOpen}
+                    selectedStatusLabel={selectedStatusLabel}
+                    selectedStatus={selectedStatus}
+                    onToggle={() => setIsStatusOpen((prev) => !prev)}
+                    onSelect={(value) => {
+                        setSelectedStatus(value);
+                        setIsStatusOpen(false);
+                    }}
                 />
 
-                <Text style={styles.sectionTitle}>Status</Text>
+                <PageSection book={MOCK_BOOK} />
 
-                <View style={styles.dropdownWrapper}>
-                    <Pressable
-                        style={styles.selectBox}
-                        onPress={() => setIsStatusOpen((prev) => !prev)}
-                    >
-                        <Text style={styles.selectText}>{selectedStatusLabel}</Text>
-                        <Ionicons
-                            name={isStatusOpen ? 'chevron-up' : 'chevron-down'}
-                            size={18}
-                            color="#444"
-                        />
-                    </Pressable>
-
-                    {isStatusOpen && (
-                        <View style={styles.dropdownMenu}>
-                            {STATUS_OPTIONS.map((option) => (
-                                <Pressable
-                                    key={option.value}
-                                    onPress={() => {
-                                        setSelectedStatus(option.value);
-                                        setIsStatusOpen(false);
-                                    }}
-                                    style={({ pressed, hovered }) => [
-                                        styles.dropdownItem,
-                                        selectedStatus === option.value && styles.dropdownItemActive,
-                                        hovered && styles.dropdownItemHover,
-                                        pressed && styles.dropdownItemPressed,
-                                    ]}
-                                >
-                                    <Text style={styles.dropdownItemText}>{option.label}</Text>
-                                </Pressable>
-                            ))}
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.pageRow}>
-                    <Text style={styles.pageLabel}>Page</Text>
-                    <Text style={styles.pageValue}>
-                        {MOCK_BOOK.currentPage} / {MOCK_BOOK.totalPages}
-                    </Text>
-                </View>
-
-                <View style={styles.sliderTrack}>
-                    <View style={[styles.sliderFill, { width: `${progress * 100}%` }]} />
-                    <View style={[styles.sliderThumb, { left: `${progress * 100}%` }]} />
-                </View>
-
-                <View style={styles.progressRow}>
-                    <Text style={styles.progressLabel}>Progress</Text>
-                    <TextInput
-                        value={String(MOCK_BOOK.currentPage)}
-                        style={styles.progressSmallInput}
-                        keyboardType="numeric"
-                    />
-                </View>
-
-                <Text style={styles.sectionTitle}>Tags</Text>
-
-                <View style={styles.addTagRow}>
-                    <TextInput placeholder="Add tag" style={styles.addTagInput} />
-                    <Pressable style={styles.plusButton}>
-                        <Ionicons name="add" size={22} color="#222" />
-                    </Pressable>
-                </View>
-
-                <View style={styles.selectedTagsBox}>
-                    {MOCK_BOOK.tags.map((tag) => (
-                        <View key={tag} style={styles.selectedTagChip}>
-                            <Text style={styles.selectedTagText}>{tag}</Text>
-                            <Ionicons name="close" size={14} color="#222" />
-                        </View>
-                    ))}
-                </View>
-
-                <View style={styles.suggestedTagsWrap}>
-                    {SUGGESTED_TAGS.map((tag) => (
-                        <Pressable key={tag} style={styles.suggestedTagChip}>
-                            <Text style={styles.suggestedTagText}>{tag}</Text>
-                            <Ionicons name="add" size={14} color="#222" />
-                        </Pressable>
-                    ))}
-                </View>
+                <TagsSection
+                    selectedTags={MOCK_BOOK.tags}
+                    suggestedTags={SUGGESTED_TAGS}
+                />
 
                 <Pressable style={styles.saveButton}>
                     <Text style={styles.saveButtonText}>Save</Text>
@@ -361,6 +427,11 @@ const styles = StyleSheet.create({
     progressLabel: {
         fontSize: 16,
         color: '#222',
+    },
+    pageInputGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     progressSmallInput: {
         width: 80,

@@ -110,6 +110,83 @@ function getStatusColor(status: BookStatus) {
   }
 }
 
+function LibraryHeader() {
+  return <Text style={styles.header}>My Library</Text>;
+}
+
+function SearchBar({
+  value,
+  onChangeText,
+}: {
+  value: string;
+  onChangeText: (text: string) => void;
+}) {
+  return (
+    <View style={styles.searchBox}>
+      <Ionicons name="search" size={16} color="#444" />
+      <TextInput
+        placeholder="Search..."
+        placeholderTextColor="#777"
+        style={styles.searchInput}
+        value={value}
+        onChangeText={onChangeText}
+      />
+    </View>
+  );
+}
+
+function StatusFilter({
+  isOpen,
+  selectedLabel,
+  onToggle,
+  onSelect,
+}: {
+  isOpen: boolean;
+  selectedLabel: string;
+  onToggle: () => void;
+  onSelect: (value: StatusFilter) => void;
+}) {
+  return (
+    <View style={styles.dropdownWrapper}>
+      <Pressable style={styles.filterButton} onPress={onToggle}>
+        <Text style={styles.filterButtonText}>{selectedLabel}</Text>
+        <Ionicons
+          name={isOpen ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color="#444"
+        />
+      </Pressable>
+
+      {isOpen && (
+        <View style={styles.dropdownMenu}>
+          {STATUS_OPTIONS.map((option) => (
+            <Pressable
+              key={option.value}
+              onPress={() => onSelect(option.value)}
+              style={({ pressed, hovered }) => [
+                styles.dropdownItem,
+                hovered && styles.dropdownItemHover,
+                pressed && styles.dropdownItemPressed,
+              ]}
+            >
+              <Text style={styles.dropdownItemText}>{option.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function TagFilter() {
+  return (
+    <Pressable style={styles.filterButton}>
+      <Text style={styles.filterButtonText}>All tags</Text>
+      <Ionicons name="chevron-down" size={16} color="#444" />
+    </Pressable>
+  );
+}
+
 function BookCard({ book }: { book: Book }) {
   const progress = book.currentPage / book.totalPages;
 
@@ -145,6 +222,20 @@ function BookCard({ book }: { book: Book }) {
   );
 }
 
+function BooksGrid({ books }: { books: Book[] }) {
+  return (
+    <FlatList
+      data={books}
+      keyExtractor={(item) => item.id.toString()}
+      numColumns={2}
+      columnWrapperStyle={styles.column}
+      contentContainerStyle={styles.listContent}
+      renderItem={({ item }) => <BookCard book={item} />}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+}
+
 export default function LibraryScreen() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('ALL');
@@ -170,70 +261,25 @@ export default function LibraryScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.screen}>
-        <Text style={styles.header}>My Library</Text>
+        <LibraryHeader />
 
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={16} color="#444" />
-          <TextInput
-            placeholder="Search..."
-            placeholderTextColor="#777"
-            style={styles.searchInput}
-            value={searchValue}
-            onChangeText={setSearchValue}
-          />
-        </View>
+        <SearchBar value={searchValue} onChangeText={setSearchValue} />
 
         <View style={styles.filtersRow}>
-          <View style={styles.dropdownWrapper}>
-            <Pressable
-              style={styles.filterButton}
-              onPress={() => setIsStatusOpen((prev) => !prev)}
-            >
-              <Text style={styles.filterButtonText}>{selectedStatusLabel}</Text>
-              <Ionicons
-                name={isStatusOpen ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color="#444"
-              />
-            </Pressable>
+          <StatusFilter
+            isOpen={isStatusOpen}
+            selectedLabel={selectedStatusLabel}
+            onToggle={() => setIsStatusOpen((prev) => !prev)}
+            onSelect={(value) => {
+              setSelectedStatus(value);
+              setIsStatusOpen(false);
+            }}
+          />
 
-            {isStatusOpen && (
-              <View style={styles.dropdownMenu}>
-                {STATUS_OPTIONS.map((option) => (
-                  <Pressable
-                    key={option.value}
-                    onPress={() => {
-                      setSelectedStatus(option.value);
-                      setIsStatusOpen(false);
-                    }}
-                    style={({ pressed, hovered }) => [
-                      styles.dropdownItem,
-                      hovered && styles.dropdownItemHover,
-                      pressed && styles.dropdownItemPressed,
-                    ]}
-                  >
-                    <Text style={styles.dropdownItemText}>{option.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <Pressable style={styles.filterButton}>
-            <Text style={styles.filterButtonText}>All tags</Text>
-            <Ionicons name="chevron-down" size={16} color="#444" />
-          </Pressable>
+          <TagFilter />
         </View>
 
-        <FlatList
-          data={filteredBooks}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          columnWrapperStyle={styles.column}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => <BookCard book={item} />}
-          showsVerticalScrollIndicator={false}
-        />
+        <BooksGrid books={filteredBooks} />
       </View>
     </SafeAreaView>
   );
@@ -313,6 +359,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  dropdownItemHover: {
+    backgroundColor: '#E8AFAF',
+  },
+  dropdownItemPressed: {
+    backgroundColor: '#D98F8F',
+  },
   listContent: {
     paddingBottom: 20,
   },
@@ -374,12 +426,5 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: '#222',
-  },
-  dropdownItemHover: {
-    backgroundColor: '#E8AFAF',
-  },
-
-  dropdownItemPressed: {
-    backgroundColor: '#D98F8F',
   },
 });

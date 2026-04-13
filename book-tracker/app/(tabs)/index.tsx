@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { useState } from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -30,46 +30,82 @@ const MOCK_CURRENT_BOOKS: Book[] = [
   },
 ];
 
+function ReadingHeader({ count }: { count: number }) {
+  return (
+    <Text style={styles.title}>
+      You are reading {count} books
+    </Text>
+  );
+}
+
+function ReadingCard({
+  book,
+  onPrev,
+  onNext,
+}: {
+  book: Book;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const progress = book.currentPage / book.totalPages;
+
+  return (
+    <View style={styles.cardWrapper}>
+      <Pressable style={styles.arrowButton} onPress={onPrev}>
+        <Ionicons name="chevron-back" size={18} color="#fff" />
+      </Pressable>
+
+      <View style={styles.card}>
+        <View style={styles.cover} />
+
+        <View style={styles.info}>
+          <Text style={styles.bookTitle}>{book.title}</Text>
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[styles.progressFill, { width: `${progress * 100}%` }]}
+            />
+          </View>
+
+          <Text style={styles.pagesText}>
+            {book.currentPage} / {book.totalPages} pages
+          </Text>
+        </View>
+      </View>
+
+      <Pressable style={styles.arrowButton} onPress={onNext}>
+        <Ionicons name="chevron-forward" size={18} color="#fff" />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
-  const currentBook = MOCK_CURRENT_BOOKS[0];
-  const progress = currentBook.currentPage / currentBook.totalPages;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const currentBook = MOCK_CURRENT_BOOKS[currentIndex];
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) =>
+      prev === 0 ? MOCK_CURRENT_BOOKS.length - 1 : prev - 1
+    );
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) =>
+      prev === MOCK_CURRENT_BOOKS.length - 1 ? 0 : prev + 1
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Text style={styles.title}>
-          You are reading {MOCK_CURRENT_BOOKS.length} books
-        </Text>
+        <ReadingHeader count={MOCK_CURRENT_BOOKS.length} />
 
-        <View style={styles.cardWrapper}>
-          <Pressable style={styles.arrowButton}>
-            <Ionicons name="chevron-back" size={18} color="#fff" />
-          </Pressable>
-
-          <View style={styles.card}>
-            <View style={styles.cover} />
-
-            <View style={styles.info}>
-              <Text style={styles.bookTitle}>{currentBook.title}</Text>
-
-              <View style={styles.progressTrack}>
-                <View
-                  style={[styles.progressFill, { width: `${progress * 100}%` }]}
-                />
-              </View>
-
-              <Text style={styles.pagesText}>
-                {currentBook.currentPage} / {currentBook.totalPages} pages
-              </Text>
-
-
-            </View>
-          </View>
-
-          <Pressable style={styles.arrowButton}>
-            <Ionicons name="chevron-forward" size={18} color="#fff" />
-          </Pressable>
-        </View>
+        <ReadingCard
+          book={currentBook}
+          onPrev={handlePrev}
+          onNext={handleNext}
+        />
       </View>
     </SafeAreaView>
   );
@@ -146,17 +182,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#222',
     marginBottom: 30,
-  },
-  editButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#E88989',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  editButtonText: {
-    color: '#111',
-    fontSize: 16,
-    fontWeight: '500',
   },
 });
