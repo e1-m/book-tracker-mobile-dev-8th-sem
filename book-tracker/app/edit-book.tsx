@@ -3,13 +3,13 @@ import {router, useLocalSearchParams} from 'expo-router';
 import {useState, useEffect} from 'react';
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 
 import {BookRepository} from '@/repos/books';
@@ -152,6 +152,76 @@ function PageSection({
   const total = book.totalPages || 1;
   const progress = total > 0 ? current / total : 0;
 
+  // 1. Create local states to manage text inputs.
+  // This allows them to hold empty strings ("") without forcing a "0" or "1".
+  const [currentText, setCurrentText] = useState(
+    book.currentPage ? String(book.currentPage) : ''
+  );
+  const [totalText, setTotalText] = useState(
+    book.totalPages ? String(book.totalPages) : ''
+  );
+
+  // 2. Keep local states in sync if the book data loads or changes from the outside
+  useEffect(() => {
+    const parsed = parseInt(currentText, 10);
+    const isFallback = book.currentPage === 0 && isNaN(parsed);
+    if (book.currentPage !== parsed && !isFallback) {
+      setCurrentText(book.currentPage ? String(book.currentPage) : '');
+    }
+  }, [book.currentPage]);
+
+  useEffect(() => {
+    const parsed = parseInt(totalText, 10);
+    const isFallback = book.totalPages === 1 && isNaN(parsed);
+    if (book.totalPages !== parsed && !isFallback) {
+      setTotalText(book.totalPages ? String(book.totalPages) : '');
+    }
+  }, [book.totalPages]);
+
+  // 3. Handle Current Page changes
+  const handleCurrentChange = (text: string) => {
+    const cleanText = text.replace(/[^0-9]/g, ''); // Prevent non-numeric characters
+
+    if (cleanText === '') {
+      setCurrentText(''); // Let UI be empty
+      onUpdate('currentPage', 0); // Keep database safe
+      return;
+    }
+
+    let parsed = parseInt(cleanText, 10);
+
+    // Limit current page so it cannot exceed total pages
+    if (parsed > total) {
+      parsed = total;
+      setCurrentText(String(parsed)); // Force input display to max value
+    } else {
+      setCurrentText(cleanText);
+    }
+
+    onUpdate('currentPage', parsed);
+  };
+
+  // 4. Handle Total Pages changes
+  const handleTotalChange = (text: string) => {
+    const cleanText = text.replace(/[^0-9]/g, '');
+
+    if (cleanText === '') {
+      setTotalText('');
+      onUpdate('totalPages', 1); // Avoid division by zero in progress calculation
+      return;
+    }
+
+    const parsed = parseInt(cleanText, 10);
+    setTotalText(cleanText);
+    onUpdate('totalPages', parsed);
+
+    // Bonus safety: If user lowers total pages below current page, cap the current page too
+    if (current > parsed) {
+      setCurrentText(String(parsed));
+      onUpdate('currentPage', parsed);
+    }
+  };
+
   return (
     <>
       <View style={styles.pageRow}>
@@ -172,19 +242,23 @@ function PageSection({
         <View style={styles.pageInputGroup}>
           <Text style={styles.progressLabel}>P.</Text>
           <TextInput
-            value={String(current)}
-            onChangeText={(text) => onUpdate('currentPage', parseInt(text) || 0)}
+            value={currentText}
+            onChangeText={handleCurrentChange}
             style={styles.progressSmallInput}
             keyboardType="numeric"
+            placeholder="0"
+            placeholderTextColor="#999"
           />
         </View>
         <View style={styles.pageInputGroup}>
           <Text style={styles.progressLabel}>of</Text>
           <TextInput
-            value={String(total)}
-            onChangeText={(text) => onUpdate('totalPages', parseInt(text) || 1)}
+            value={totalText}
+            onChangeText={handleTotalChange}
             style={styles.progressSmallInput}
             keyboardType="numeric"
+            placeholder="1"
+            placeholderTextColor="#999"
           />
         </View>
       </View>

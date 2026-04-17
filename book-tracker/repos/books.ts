@@ -47,7 +47,6 @@ export const BookRepository = {
 
   getAllBooks: async (searchQuery: string = ''): Promise<Book[]> => {
     const db = await getDbConnection();
-
     const query = `
         SELECT 
            b.id, b.title, b.author, b.description,
@@ -76,51 +75,58 @@ export const BookRepository = {
 
   createBook: async (book: Book): Promise<number> => {
     const db = await getDbConnection();
+
+    // STRICT SANITIZATION: Force undefined to become null or defaults
+    const title = book.title ?? 'Untitled';
+    const author = book.author ?? null;
+    const publishYear = typeof book.publishYear === 'number' && !isNaN(book.publishYear) ? book.publishYear : null;
+    const description = book.description ?? null;
+    const totalPages = typeof book.totalPages === 'number' && !isNaN(book.totalPages) ? book.totalPages : 1;
+    const currentPage = typeof book.currentPage === 'number' && !isNaN(book.currentPage) ? book.currentPage : 0;
+    const status = book.status ?? 'WANT_TO_READ';
+    const coverImageUri = book.coverImageUri ?? null;
+
     const result = await db.runAsync(
       `INSERT INTO books (title, author, publish_year, description, total_pages, current_page, status, cover_image_uri)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        book.title,
-        book.author || null,
-        book.publishYear || null,
-        book.description || null,
-        book.totalPages || 1,
-        book.currentPage || 0,
-        book.status || 'WANT_TO_READ',
-        book.coverImageUri || null
-      ]
+      [title, author, publishYear, description, totalPages, currentPage, status, coverImageUri]
     );
     return result.lastInsertRowId;
   },
 
   updateBook: async (id: number, book: Book): Promise<void> => {
     const db = await getDbConnection();
+
+    // STRICT SANITIZATION
+    const title = book.title ?? 'Untitled';
+    const author = book.author ?? null;
+    const publishYear = typeof book.publishYear === 'number' && !isNaN(book.publishYear) ? book.publishYear : null;
+    const description = book.description ?? null;
+    const totalPages = typeof book.totalPages === 'number' && !isNaN(book.totalPages) ? book.totalPages : 1;
+    const currentPage = typeof book.currentPage === 'number' && !isNaN(book.currentPage) ? book.currentPage : 0;
+    const status = book.status ?? 'WANT_TO_READ';
+    const coverImageUri = book.coverImageUri ?? null;
+    const safeId = typeof id === 'number' && !isNaN(id) ? id : 0;
+
     await db.runAsync(
       `UPDATE books
        SET title = ?, author = ?, publish_year = ?, description = ?,
            current_page = ?, total_pages = ?, status = ?, cover_image_uri = ?
        WHERE id = ?`,
-      [
-        book.title,
-        book.author ?? null,
-        book.publishYear ?? null,
-        book.description ?? null,
-        book.currentPage ?? 0,
-        book.totalPages || 1,
-        book.status ?? 'WANT_TO_READ',
-        book.coverImageUri ?? null,
-        id
-      ]
+      [title, author, publishYear, description, currentPage, totalPages, status, coverImageUri, safeId]
     );
   },
 
   updateProgress: async (id: number, currentPage: number): Promise<void> => {
     const db = await getDbConnection();
-    await db.runAsync('UPDATE books SET current_page = ? WHERE id = ?', [currentPage, id]);
+    const safeCurrent = typeof currentPage === 'number' && !isNaN(currentPage) ? currentPage : 0;
+    const safeId = typeof id === 'number' && !isNaN(id) ? id : 0;
+    await db.runAsync('UPDATE books SET current_page = ? WHERE id = ?', [safeCurrent, safeId]);
   },
 
   deleteBook: async (id: number): Promise<void> => {
     const db = await getDbConnection();
-    await db.runAsync('DELETE FROM books WHERE id = ?', [id]);
+    const safeId = typeof id === 'number' && !isNaN(id) ? id : 0;
+    await db.runAsync('DELETE FROM books WHERE id = ?', [safeId]);
   }
 };
