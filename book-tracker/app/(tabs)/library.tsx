@@ -1,7 +1,7 @@
 import {Ionicons} from '@expo/vector-icons';
 import {router, useFocusEffect} from 'expo-router';
 import {useMemo, useState, useCallback} from 'react';
-import {FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View, ActivityIndicator} from 'react-native';
+import {FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator} from 'react-native';
 
 import {BookRepository} from '@/repos/books';
 import {TagRepository} from '@/repos/tags';
@@ -74,10 +74,10 @@ function DropdownFilter({isOpen, selectedLabel, options, onToggle, onSelect}: {
       {isOpen && (
         <View style={styles.dropdownMenu}>
           {options.map((option) => (
-            <Pressable key={option.value} onPress={() => onSelect(option.value)} style={({
-                                                                                           pressed,
-                                                                                           hovered
-                                                                                         }) => [styles.dropdownItem, hovered && styles.dropdownItemHover, pressed && styles.dropdownItemPressed]}>
+            <Pressable key={option.value}
+                       onPress={() => onSelect(option.value)}
+                       style={({pressed, hovered}) =>
+                         [styles.dropdownItem, hovered && styles.dropdownItemHover, pressed && styles.dropdownItemPressed]}>
               <Text style={styles.dropdownItemText}>{option.label}</Text>
             </Pressable>
           ))}
@@ -206,41 +206,45 @@ export default function LibraryScreen() {
   const selectedTagLabel = tagOptions.find((option) => option.value === selectedTag)?.label || 'All tags';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.screen}>
-        <LibraryHeader/>
-        <SearchBar value={searchValue} onChangeText={setSearchValue}/>
-
-        <View style={styles.filtersRow}>
-          <DropdownFilter isOpen={isStatusOpen} selectedLabel={selectedStatusLabel} options={STATUS_OPTIONS}
-                          onToggle={handleToggleStatus} onSelect={(value) => {
+    <View style={styles.screen}>
+      <LibraryHeader/>
+      <SearchBar value={searchValue} onChangeText={setSearchValue}/>
+      <View style={styles.filtersRow}>
+        <DropdownFilter
+          isOpen={isStatusOpen}
+          selectedLabel={selectedStatusLabel}
+          options={STATUS_OPTIONS}
+          onToggle={handleToggleStatus}
+          onSelect={(value) => {
             setSelectedStatus(value as StatusFilter);
             setIsStatusOpen(false);
           }}/>
-          <DropdownFilter isOpen={isTagOpen} selectedLabel={selectedTagLabel} options={tagOptions}
-                          onToggle={handleToggleTag} onSelect={(value) => {
+        <DropdownFilter
+          isOpen={isTagOpen}
+          selectedLabel={selectedTagLabel}
+          options={tagOptions}
+          onToggle={handleToggleTag}
+          onSelect={(value) => {
             setSelectedTag(value);
             setIsTagOpen(false);
           }}/>
-        </View>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4A67C7"/>
-          </View>
-        ) : (
-          <BooksGrid books={filteredBooks}/>
-        )}
-
-        <AddBookButton/>
       </View>
-    </SafeAreaView>
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4A67C7"/>
+        </View>
+      ) : (
+        <BooksGrid books={filteredBooks}/>
+      )}
+
+      <AddBookButton/>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {flex: 1, backgroundColor: '#F3F3F3'},
-  screen: {flex: 1, paddingHorizontal: 16, paddingTop: 20, position: 'relative'},
+  screen: {flex: 1, paddingHorizontal: 16, paddingTop: 20, position: 'relative', backgroundColor: '#F3F3F3'},
   header: {fontSize: 28, fontWeight: '500', color: '#222', marginBottom: 18},
   searchBox: {
     flexDirection: 'row',
@@ -252,8 +256,8 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   searchInput: {flex: 1, marginLeft: 8, fontSize: 14, color: '#222'},
-  filtersRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18, gap: 12, zIndex: 10},
-  dropdownWrapper: {flex: 1, position: 'relative', zIndex: 20},
+  filtersRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 18, gap: 12},
+  dropdownWrapper: {flex: 1, position: 'relative'},
   filterButton: {
     flex: 1,
     height: 40,
@@ -281,7 +285,7 @@ const styles = StyleSheet.create({
   dropdownItemPressed: {backgroundColor: '#D98F8F'},
   listContent: {paddingBottom: 80},
   column: {gap: 12, marginBottom: 12},
-  card: {flex: 1, backgroundColor: '#D9D9D9', padding: 12, borderRadius: 0, minHeight: 280},
+  card: {flex: 1, maxWidth: '45%', marginHorizontal: '1%', backgroundColor: '#D9D9D9', padding: 12, borderRadius: 0, minHeight: 280},
   bookCover: {width: '100%', height: 130, backgroundColor: '#695050', marginBottom: 10},
   bookName: {textAlign: 'center', fontSize: 14, color: '#222', marginBottom: 6},
   bookAuthor: {textAlign: 'center', fontSize: 13, color: '#444', marginBottom: 10},
