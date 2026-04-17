@@ -28,22 +28,38 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  // Track database readiness
+  const [dbReady, setDbReady] = useState(false);
+
   useEffect(() => {
     if (error) throw error;
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
+    async function prepare() {
+      try {
+        await initializeDatabase();
+        setDbReady(true);
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  useEffect(() => {
+    // Only hide splash screen when BOTH fonts and DB are ready
+    if (loaded && dbReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, dbReady]);
 
-  if (!loaded) {
+  if (!loaded || !dbReady) {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return <RootLayoutNav/>;
 }
 
 function RootLayoutNav() {
