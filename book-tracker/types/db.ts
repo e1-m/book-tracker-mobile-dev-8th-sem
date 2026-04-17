@@ -1,16 +1,16 @@
 export type BookStatus = 'READING' | 'READ' | 'WANT_TO_READ' | 'DROPPED';
 
 export interface Book {
-  id?: number; // Optional because it doesn't exist until saved in DB
+  id: number;
   title: string;
-  author?: string | null;
-  publish_year?: number | null;
-  description?: string | null;
-  cover_image_uri?: string | null;
-  current_page?: number;
-  total_pages: number;
-  status?: BookStatus;
-  created_at?: string;
+  author: string | null;
+  publishYear: number | null;
+  description: string | null;
+  coverImageUri: string | null;
+  currentPage: number;
+  totalPages: number;
+  status: BookStatus;
+  createdAt: string;
 
   // Optional field populated by our complex JOIN query
   tags?: string[];

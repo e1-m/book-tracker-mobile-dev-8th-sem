@@ -1,36 +1,16 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import {Ionicons} from '@expo/vector-icons';
+import {useEffect, useState} from 'react';
 import {
+  ActivityIndicator,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import {BookRepository} from "@/repos/books";
+import {Book} from "@/types/db";
 
-type Book = {
-  id: number;
-  title: string;
-  currentPage: number;
-  totalPages: number;
-};
-
-const MOCK_CURRENT_BOOKS: Book[] = [
-  {
-    id: 1,
-    title: 'Harry Potter',
-    currentPage: 50,
-    totalPages: 200,
-  },
-  {
-    id: 2,
-    title: 'The Hobbit',
-    currentPage: 90,
-    totalPages: 310,
-  },
-];
-
-function ReadingHeader({ count }: { count: number }) {
+function ReadingHeader({count}: { count: number }) {
   return (
     <Text style={styles.title}>
       You are reading {count} books
@@ -39,10 +19,10 @@ function ReadingHeader({ count }: { count: number }) {
 }
 
 function ReadingCard({
-  book,
-  onPrev,
-  onNext,
-}: {
+                       book,
+                       onPrev,
+                       onNext,
+                     }: {
   book: Book;
   onPrev: () => void;
   onNext: () => void;
@@ -52,18 +32,18 @@ function ReadingCard({
   return (
     <View style={styles.cardWrapper}>
       <Pressable style={styles.arrowButton} onPress={onPrev}>
-        <Ionicons name="chevron-back" size={18} color="#fff" />
+        <Ionicons name="chevron-back" size={18} color="#fff"/>
       </Pressable>
 
       <View style={styles.card}>
-        <View style={styles.cover} />
+        <View style={styles.cover}/>
 
         <View style={styles.info}>
           <Text style={styles.bookTitle}>{book.title}</Text>
 
           <View style={styles.progressTrack}>
             <View
-              style={[styles.progressFill, { width: `${progress * 100}%` }]}
+              style={[styles.progressFill, {width: `${progress * 100}%`}]}
             />
           </View>
 
@@ -74,52 +54,105 @@ function ReadingCard({
       </View>
 
       <Pressable style={styles.arrowButton} onPress={onNext}>
-        <Ionicons name="chevron-forward" size={18} color="#fff" />
+        <Ionicons name="chevron-forward" size={18} color="#fff"/>
       </Pressable>
     </View>
   );
 }
 
-export default function HomeScreen() {
+function ReadingCarousel() {
+  const [books, setBooks] = useState<Book[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const currentBook = MOCK_CURRENT_BOOKS[currentIndex];
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setIsLoading(true);
+        const readingBooks = await BookRepository.getReadingBooks();
+        setBooks(readingBooks);
+        setCurrentIndex(0);
+      } catch (error) {
+        console.error("Error fetching reading books:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
 
   const handlePrev = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? MOCK_CURRENT_BOOKS.length - 1 : prev - 1
+      prev === 0 ? books.length - 1 : prev - 1
     );
   };
 
   const handleNext = () => {
     setCurrentIndex((prev) =>
-      prev === MOCK_CURRENT_BOOKS.length - 1 ? 0 : prev + 1
+      prev === books.length - 1 ? 0 : prev + 1
     );
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <ReadingHeader count={MOCK_CURRENT_BOOKS.length} />
-
-        <ReadingCard
-          book={currentBook}
-          onPrev={handlePrev}
-          onNext={handleNext}
-        />
+  if (isLoading) {
+    return (
+      <View style={styles.centeredContainer}>
+        <ActivityIndicator size="large" color="#0000ff"/>
       </View>
-    </SafeAreaView>
+    );
+  }
+
+  if (books.length === 0) {
+    return (
+      <View style={styles.container}>
+        <ReadingHeader count={0}/>
+        <View style={styles.centeredContainer}>
+          <Text style={styles.emptyText}>You aren't reading any books right now.</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const currentBook = books[currentIndex];
+
+  return (
+    <View style={styles.container}>
+      <ReadingHeader count={books.length}/>
+      <ReadingCard
+        book={currentBook}
+        onPrev={handlePrev}
+        onNext={handleNext}
+      />
+    </View>
   );
 }
 
+export default function HomeScreen() {
+  return (
+    <View style={styles.screenContainer}>
+      <ReadingCarousel/>
+    </View>
+  );
+}
 const styles = StyleSheet.create({
-  safeArea: {
+  screenContainer: {
     flex: 1,
     backgroundColor: '#F3F3F3',
+    paddingTop: 20,
   },
   container: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 30,
+  },
+  centeredContainer: {
+    padding: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
   },
   title: {
     fontSize: 24,
