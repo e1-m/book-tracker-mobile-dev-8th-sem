@@ -238,9 +238,7 @@ export default function LibraryScreen() {
   );
 }
 
-// Ensure you paste your exact `const styles = StyleSheet.create({...})` from the original `two.tsx` here.
 const styles = StyleSheet.create({
-  // Your styles remain identical.
   safeArea: {flex: 1, backgroundColor: '#F3F3F3'},
   screen: {flex: 1, paddingHorizontal: 16, paddingTop: 20, position: 'relative'},
   header: {fontSize: 28, fontWeight: '500', color: '#222', marginBottom: 18},
