@@ -8,8 +8,7 @@ import {
   Text,
   TextInput,
   View,
-  ActivityIndicator,
-  SafeAreaView,
+  ActivityIndicator
 } from 'react-native';
 
 import {BookRepository} from '@/repos/books';
@@ -41,8 +40,6 @@ function EditHeader({onDelete, isNew}: { onDelete: () => void, isNew: boolean })
     </View>
   );
 }
-
-// ... [Keep BookMainInfo, StatusSection, PageSection, and TagsSection components exactly the same] ...
 
 function BookMainInfo({
                         book,
@@ -152,8 +149,6 @@ function PageSection({
   const total = book.totalPages || 1;
   const progress = total > 0 ? current / total : 0;
 
-  // 1. Create local states to manage text inputs.
-  // This allows them to hold empty strings ("") without forcing a "0" or "1".
   const [currentText, setCurrentText] = useState(
     book.currentPage ? String(book.currentPage) : ''
   );
@@ -161,7 +156,6 @@ function PageSection({
     book.totalPages ? String(book.totalPages) : ''
   );
 
-  // 2. Keep local states in sync if the book data loads or changes from the outside
   useEffect(() => {
     const parsed = parseInt(currentText, 10);
     const isFallback = book.currentPage === 0 && isNaN(parsed);
@@ -178,22 +172,20 @@ function PageSection({
     }
   }, [book.totalPages]);
 
-  // 3. Handle Current Page changes
   const handleCurrentChange = (text: string) => {
-    const cleanText = text.replace(/[^0-9]/g, ''); // Prevent non-numeric characters
+    const cleanText = text.replace(/[^0-9]/g, '');
 
     if (cleanText === '') {
-      setCurrentText(''); // Let UI be empty
-      onUpdate('currentPage', 0); // Keep database safe
+      setCurrentText('');
+      onUpdate('currentPage', 0);
       return;
     }
 
     let parsed = parseInt(cleanText, 10);
 
-    // Limit current page so it cannot exceed total pages
     if (parsed > total) {
       parsed = total;
-      setCurrentText(String(parsed)); // Force input display to max value
+      setCurrentText(String(parsed));
     } else {
       setCurrentText(cleanText);
     }
@@ -201,7 +193,6 @@ function PageSection({
     onUpdate('currentPage', parsed);
   };
 
-  // 4. Handle Total Pages changes
   const handleTotalChange = (text: string) => {
     const cleanText = text.replace(/[^0-9]/g, '');
 
@@ -215,7 +206,6 @@ function PageSection({
     setTotalText(cleanText);
     onUpdate('totalPages', parsed);
 
-    // Bonus safety: If user lowers total pages below current page, cap the current page too
     if (current > parsed) {
       setCurrentText(String(parsed));
       onUpdate('currentPage', parsed);
@@ -343,16 +333,13 @@ export default function EditBookScreen() {
       try {
         setIsLoading(true);
 
-        // 1. Always fetch tags so the user has suggestions
         const fetchedTags = await TagRepository.getAllTags();
         setAllTags(fetchedTags.map((t) => t.name));
 
         if (!isNewBook) {
-          // 2a. If editing, fetch the existing book
           const fetchedBook = await BookRepository.getBookById(bookId);
           if (fetchedBook) setBook(fetchedBook);
         } else {
-          // 2b. If adding, initialize an empty book state
           setBook({
             id: 0,
             title: '',
@@ -370,7 +357,6 @@ export default function EditBookScreen() {
       } catch (error) {
         console.error('Error loading book/tags:', error);
       } finally {
-        // Now this ALWAYS runs, removing the infinite load
         setIsLoading(false);
       }
     };
@@ -403,15 +389,12 @@ export default function EditBookScreen() {
       let finalBookId = bookId;
 
       if (isNewBook) {
-        // Create
         finalBookId = await BookRepository.createBook(book);
       } else {
-        // Update
         await BookRepository.updateBook(bookId, book);
-        await TagRepository.clearTagsForBook(bookId); // Clear old tags to insert fresh
+        await TagRepository.clearTagsForBook(bookId);
       }
 
-      // Save Tags
       for (const tagName of book.tags || []) {
         const tagId = await TagRepository.findOrCreateTag(tagName);
         await TagRepository.linkTagToBook(finalBookId, tagId);
@@ -437,20 +420,20 @@ export default function EditBookScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.safeArea, styles.center]}>
+      <View style={[styles.safeArea, styles.center]}>
         <ActivityIndicator size="large" color="#6050E8"/>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!book) {
     return (
-      <SafeAreaView style={[styles.safeArea, styles.center]}>
+      <View style={[styles.safeArea, styles.center]}>
         <Text>Could not load book data.</Text>
         <Pressable onPress={() => router.back()} style={{marginTop: 20}}>
           <Text style={{color: '#6050E8'}}>Go Back</Text>
         </Pressable>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -461,7 +444,7 @@ export default function EditBookScreen() {
   const suggestedTags = allTags.filter((t) => !book.tags?.includes(t));
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         {/* Pass down isNew flag to hide delete button if adding new */}
         <EditHeader onDelete={handleDelete} isNew={isNewBook}/>
@@ -498,12 +481,11 @@ export default function EditBookScreen() {
           </Text>
         </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Keep your existing styles down here!
   safeArea: {flex: 1, backgroundColor: '#F3F3F3'},
   center: {justifyContent: 'center', alignItems: 'center'},
   content: {padding: 20, paddingBottom: 40},
