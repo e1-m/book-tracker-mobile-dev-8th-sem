@@ -1,5 +1,5 @@
 import {Ionicons} from '@expo/vector-icons';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 import {BookRepository} from "@/repos/books";
 import {Book} from "@/types/db";
@@ -8,7 +8,7 @@ import {useFocusEffect} from "expo-router";
 function ReadingHeader({count}: { count: number }) {
   return (
     <Text style={styles.title}>
-      You are reading {count} books
+      You are reading {count} book{count === 1 ? '' : 's'}
     </Text>
   );
 }
@@ -57,9 +57,10 @@ function ReadingCarousel() {
       const fetchBooks = async () => {
         try {
           setIsLoading(true);
+
           const readingBooks = await BookRepository.getReadingBooks();
           setBooks(readingBooks);
-          setCurrentIndex(0); // Reset index when new data loads
+          setCurrentIndex(0);
         } catch (error) {
           console.error("Error fetching reading books:", error);
         } finally {
@@ -119,7 +120,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Your styles are great - keep them exactly as they were!
   screenContainer: {flex: 1, backgroundColor: '#F3F3F3', paddingTop: 20},
   container: {flex: 1, paddingHorizontal: 20, paddingTop: 30},
   centeredContainer: {padding: 40, justifyContent: 'center', alignItems: 'center'},
