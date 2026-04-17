@@ -2,9 +2,13 @@ import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'booktracker.db';
 
+let dbInstance: SQLite.SQLiteDatabase | null = null;
 
 export const getDbConnection = async () => {
-  return await SQLite.openDatabaseAsync(DATABASE_NAME);
+  if (!dbInstance) {
+    dbInstance = await SQLite.openDatabaseAsync(DATABASE_NAME);
+  }
+  return dbInstance;
 };
 
 
