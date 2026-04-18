@@ -347,7 +347,7 @@ export default function EditBookScreen() {
             publishYear: new Date().getFullYear(),
             description: '',
             currentPage: 0,
-            totalPages: 100, // Reasonable default
+            totalPages: 100,
             status: 'WANT_TO_READ',
             tags: [],
             coverImageUri: null,
@@ -446,7 +446,6 @@ export default function EditBookScreen() {
   return (
     <View style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Pass down isNew flag to hide delete button if adding new */}
         <EditHeader onDelete={handleDelete} isNew={isNewBook}/>
 
         <BookMainInfo book={book} onUpdate={handleUpdateField}/>

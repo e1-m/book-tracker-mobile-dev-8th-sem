@@ -11,7 +11,6 @@ export const TagRepository = {
     const db = await getDbConnection();
     const cleanName = tagName.trim();
 
-    // Define a quick inline type for this specific query return
     const existingTag = await db.getFirstAsync<{ id: number }>(
       'SELECT id FROM tags WHERE name = ?',
       [cleanName]

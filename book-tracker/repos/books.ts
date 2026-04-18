@@ -117,13 +117,6 @@ export const BookRepository = {
     );
   },
 
-  updateProgress: async (id: number, currentPage: number): Promise<void> => {
-    const db = await getDbConnection();
-    const safeCurrent = typeof currentPage === 'number' && !isNaN(currentPage) ? currentPage : 0;
-    const safeId = typeof id === 'number' && !isNaN(id) ? id : 0;
-    await db.runAsync('UPDATE books SET current_page = ? WHERE id = ?', [safeCurrent, safeId]);
-  },
-
   deleteBook: async (id: number): Promise<void> => {
     const db = await getDbConnection();
     const safeId = typeof id === 'number' && !isNaN(id) ? id : 0;

@@ -50,7 +50,6 @@ export const initializeDatabase = async () => {
   `;
 
   try {
-    // execAsync is used for multiple statements or schema changes
     await db.execAsync(query);
     console.log("Database tables initialized successfully");
   } catch (error) {
