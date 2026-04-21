@@ -1,0 +1,8 @@
+services:
+  websocket-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: websocket-server
+    ports:
+      - "8000:8000"
