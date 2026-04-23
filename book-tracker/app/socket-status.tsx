@@ -65,13 +65,6 @@ export default function SocketStatusScreen() {
                     <Text style={styles.buttonText}>Disconnect</Text>
                 </Pressable>
             </View>
-
-            <Pressable
-                style={styles.secondaryButton}
-                onPress={() => socketManager.reconnect()}
-            >
-                <Text style={styles.buttonText}>Reconnect</Text>
-            </Pressable>
         </View>
     );
 }
