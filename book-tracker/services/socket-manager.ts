@@ -90,6 +90,7 @@ class SocketManager {
         };
 
         this.socket.onerror = (error) => {
+            if (this.manuallyClosed) return;
             console.error('Socket error:', error);
         };
     }
