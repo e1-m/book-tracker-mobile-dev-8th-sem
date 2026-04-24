@@ -15,15 +15,6 @@ class SocketManager {
     private connectionState: SocketConnectionState = 'DISCONNECTED';
     private messageHandlers = new Set<MessageHandler>();
     private stateHandlers = new Set<StateHandler>();
-    private lastMessage: NotificationEvent | null = null;
-
-    getState() {
-        return this.connectionState;
-    }
-
-    getLastMessage() {
-        return this.lastMessage;
-    }
 
     onMessage(handler: MessageHandler) {
         this.messageHandlers.add(handler);
@@ -68,7 +59,6 @@ class SocketManager {
         this.socket.onmessage = (event) => {
             try {
                 const parsed = JSON.parse(event.data) as NotificationEvent;
-                this.lastMessage = parsed;
                 this.messageHandlers.forEach((handler) => handler(parsed));
             } catch (error) {
                 console.error('Failed to parse socket message:', error);
@@ -104,20 +94,6 @@ class SocketManager {
         }
 
         this.setState('DISCONNECTED');
-    }
-
-    send(message: unknown) {
-        if (this.socket && this.connectionState === 'CONNECTED') {
-            this.socket.send(JSON.stringify(message));
-        }
-    }
-
-    reconnect() {
-        if (!this.url) return;
-
-        this.disconnect();
-        this.manuallyClosed = false;
-        this.connect(this.url);
     }
 }
 
