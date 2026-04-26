@@ -8,7 +8,7 @@ import {
     SocketConnectionState,
 } from '@/services/socket-events';
 
-const WS_URL = 'ws://192.168.0.234:8000/notifications';
+const WS_URL = 'ws://192.168.0.183:8000/notifications';
 
 export default function SocketStatusScreen() {
     const [connectionState, setConnectionState] =
