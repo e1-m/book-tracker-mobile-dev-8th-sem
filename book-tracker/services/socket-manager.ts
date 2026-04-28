@@ -6,7 +6,7 @@ import {
 type MessageHandler = (event: NotificationEvent) => void;
 type StateHandler = (state: SocketConnectionState) => void;
 
-class SocketManager {
+export class SocketManager {
     private socket: WebSocket | null = null;
     private url: string | null = null;
     private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;

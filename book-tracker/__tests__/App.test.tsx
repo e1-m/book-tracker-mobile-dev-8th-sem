@@ -1,128 +1,312 @@
-import { socketManager } from '../services/socket-manager';
+import {SocketManager} from '../services/socket-manager';
+import { SocketConnectionState } from '../services/socket-events';
 
-afterAll(() => {
-  socketManager.disconnect();
-  jest.useRealTimers();
-});
+class MockWebSocket {
+    url: string;
+    onopen: (() => void) | null = null;
+    onclose: (() => void) | null = null;
+    onmessage: ((event: any) => void) | null = null;
+    close = jest.fn();
 
-beforeAll(() => {
-  jest.useFakeTimers();
-});
-
-jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
-  default: () => 'light',
-  useColorScheme: () => 'light',
-}));
-
-const originalError = console.error;
-beforeAll(() => {
-  console.error = (...args) => {
-    if (/act\(\.\.\.\)/.test(args[0])) return;
-    originalError.call(console, ...args);
-  };
-});
-
-afterAll(() => {
-  console.error = originalError;
-});
-
-const getStatusLabel = (status: string): string => {
-    switch (status) {
-        case 'READ': return 'Read';
-        case 'READING': return 'Reading';
-        case 'WANT_TO_READ': return 'Want to read';
-        default: return status;
+    constructor(url: string) {
+        this.url = url;
     }
-};
+}
 
-describe('Book Tracker - Automated Tests', () => {
-    describe('WebSocket Service Logic', () => {
-        test('1. Initial socket state should be DISCONNECTED', () => {
-            expect((socketManager as any).connectionState).toBe('DISCONNECTED');
+global.WebSocket = MockWebSocket as any;
+
+describe('SocketManager', () => {
+    let manager: SocketManager;
+
+    beforeEach(() => {
+        jest.useFakeTimers();
+        manager = new SocketManager();
+        jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        jest.clearAllTimers();
+        jest.useRealTimers();
+    });
+
+    const getMockSocket = () => (manager as any).socket as MockWebSocket;
+
+    describe('Connection States & Basic Methods', () => {
+        it('1. should start with a DISCONNECTED state', () => {
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
+            expect(stateHandler).toHaveBeenCalledWith('DISCONNECTED');
         });
 
-        test('2. Should have a connect method defined', () => {
-            expect(typeof socketManager.connect).toBe('function');
+        it('2. should transition to CONNECTING when connect is called', () => {
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
+            manager.connect('ws://test.com');
+            expect(stateHandler).toHaveBeenCalledWith('CONNECTING');
         });
 
-        test('3. Should have a disconnect method defined', () => {
-            expect(typeof socketManager.disconnect).toBe('function');
+        it('3. should transition to CONNECTED when the socket opens', () => {
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
+
+            manager.connect('ws://test.com');
+            getMockSocket().onopen!();
+
+            expect(stateHandler).toHaveBeenCalledWith('CONNECTED');
         });
 
-        test('4. onMessage should return an unsubscribe function', () => {
-            const unsubscribe = socketManager.onMessage(() => {});
-            expect(typeof unsubscribe).toBe('function');
-            unsubscribe();
+        it('4. should ignore connect() if already CONNECTING', () => {
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
+
+            manager.connect('ws://test.com');
+            const initialSocket = getMockSocket();
+
+            expect(stateHandler).toHaveBeenCalledWith('CONNECTING');
+
+            stateHandler.mockClear();
+
+            manager.connect('ws://test.com');
+
+            expect(getMockSocket()).toBe(initialSocket);
+            expect(stateHandler).not.toHaveBeenCalled();
         });
 
-        test('5. onStateChange should return an unsubscribe function', () => {
-            const unsubscribe = socketManager.onStateChange(() => {});
-            expect(typeof unsubscribe).toBe('function');
-            unsubscribe();
-        });
+        it('5. should ignore connect() if already CONNECTED', () => {
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
 
-        test('6. MAX_RETRIES should be set to 1 as per requirements', () => {
-            expect((socketManager as any).reconnectTimeout).toBeDefined;
-        });
+            manager.connect('ws://test.com');
+            getMockSocket().onopen!();
+            const initialSocket = getMockSocket();
 
-        test('7. Should correctly parse valid JSON notifications', () => {
-            const rawJson = JSON.stringify({ id: '123', message: 'User started reading', createdAt: new Date().toISOString() });
-            let capturedEvent: any = null;
-            socketManager.onMessage((event) => { capturedEvent = event; });
+            expect(stateHandler).toHaveBeenCalledWith('CONNECTED');
 
-            (socketManager as any).messageHandlers.forEach((handler: any) => handler(JSON.parse(rawJson)));
+            stateHandler.mockClear();
 
-            expect(capturedEvent.id).toBe('123');
+            manager.connect('ws://test.com');
+
+            expect(getMockSocket()).toBe(initialSocket);
+            expect(stateHandler).not.toHaveBeenCalled();
         });
     });
 
-    describe('Library Data & UI Logic', () => {
-        const mockBooks = [
-            { id: 1, title: 'Dune', author: 'Frank Herbert', status: 'READING' },
-            { id: 2, title: 'The Hobbit', author: 'Tolkien', status: 'READ' },
-            { id: 3, title: '1984', author: 'George Orwell', status: 'WANT_TO_READ' }
-        ];
+    describe('Disconnection Logic', () => {
+        it('6. should transition to DISCONNECTED and close socket on manual disconnect', () => {
+            manager.connect('ws://test.com');
+            const ws = getMockSocket();
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
 
-        test('8. Should return "Reading" label for READING status', () => {
-            expect(getStatusLabel('READING')).toBe('Reading');
+            manager.disconnect();
+
+            expect(ws.close).toHaveBeenCalled();
+            expect(stateHandler).toHaveBeenCalledWith('DISCONNECTED');
+            expect(getMockSocket()).toBeNull();
         });
 
-        test('9. Should return "Read" label for READ status', () => {
-            expect(getStatusLabel('READ')).toBe('Read');
+        it('7. should never reconnect after disconnect even if socket closes', () => {
+            manager.connect('ws://test.com');
+
+            const ws = getMockSocket();
+
+            manager.disconnect();
+
+            ws.onclose?.();
+
+            jest.advanceTimersByTime(5000);
+
+            expect(getMockSocket()).toBeNull();
         });
 
-        test('10. Search filter: should find books by title (case-insensitive)', () => {
-            const query = 'dune';
-            const filtered = mockBooks.filter(b => b.title.toLowerCase().includes(query));
-            expect(filtered.length).toBe(1);
-            expect(filtered[0].title).toBe('Dune');
+        it('8. should clear any pending reconnect timeouts when manually disconnected', () => {
+            const clearSpy = jest.spyOn(global, 'clearTimeout');
+
+            manager.connect('ws://test.com');
+
+            const socket = getMockSocket();
+            socket.onclose!();
+
+            manager.disconnect();
+
+            expect(clearSpy).toHaveBeenCalledTimes(1);
+
+            jest.advanceTimersByTime(2500);
+            expect(getMockSocket()).toBeNull();
+
+            clearSpy.mockRestore();
         });
 
-        test('11. Search filter: should find books by author', () => {
-            const query = 'Orwell';
-            const filtered = mockBooks.filter(b => b.author.toLowerCase().includes(query.toLowerCase()));
-            expect(filtered.length).toBe(1);
+        it('9. should ignore any socket events after disconnect', () => {
+            manager.connect('ws://test.com');
+
+            const ws = getMockSocket();
+
+            manager.disconnect();
+
+            ws.onopen?.();
+            ws.onmessage?.({ data: JSON.stringify({ test: 1 }) });
+            ws.onclose?.();
+
+            expect(getMockSocket()).toBeNull();
         });
 
-        test('12. Status filter: should correctly filter READING books', () => {
-            const filtered = mockBooks.filter(b => b.status === 'READING');
-            expect(filtered.length).toBe(1);
+        it('10. should handle multiple disconnect calls safely', () => {
+            manager.connect('ws://test.com');
+            const ws = getMockSocket();
+
+            manager.disconnect();
+            manager.disconnect();
+
+            expect(ws.close).toHaveBeenCalledTimes(1);
+            expect(getMockSocket()).toBeNull();
         });
 
-        test('13. Notification Model: object should have required properties', () => {
-            const notification = { id: 'test-id', message: 'Updated', createdAt: '2026-04-26T12:00:00Z' };
-            expect(notification).toHaveProperty('id');
-            expect(notification).toHaveProperty('message');
+        it('11. should allow reconnect after disconnect', () => {
+            manager.connect('ws://test.com');
+            manager.disconnect();
+
+            manager.connect('ws://test.com');
+
+            expect(getMockSocket()).not.toBeNull();
         });
 
-        test('14. Empty list: should return zero results for non-existent books', () => {
-            const filtered = mockBooks.filter(b => b.title === 'NonExistentBook');
-            expect(filtered.length).toBe(0);
+        it('12. should ignore socket events after disconnect', () => {
+            const stateHandler = jest.fn();
+            manager.onStateChange(stateHandler);
+
+            manager.connect('ws://test.com');
+            manager.disconnect();
+
+            const ws = getMockSocket();
+
+            stateHandler.mockClear();
+
+            ws?.onopen?.();
+
+            expect(stateHandler).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Reconnection Logic (Auto-Retry)', () => {
+        it('13. should transition to RECONNECTING on unexpected disconnect', () => {
+            const stateHandler = jest.fn();
+            manager.connect('ws://test.com');
+            manager.onStateChange(stateHandler);
+
+            getMockSocket().onclose!();
+
+            expect(stateHandler).toHaveBeenCalledWith('RECONNECTING');
         });
 
-        test('15. Date formatting: createdAt should be a valid date string', () => {
-            const timestamp = new Date().toISOString();
-            expect(isNaN(Date.parse(timestamp))).toBe(false);
+        it('14. should attempt to reconnect exactly after 2 seconds', () => {
+            manager.connect('ws://test.com');
+            const initialSocket = getMockSocket();
+
+            initialSocket.onclose!();
+
+            jest.advanceTimersByTime(1999);
+            expect(getMockSocket()).toBeNull();
+
+            jest.advanceTimersByTime(1);
+            expect(getMockSocket()).toBeDefined();
+            expect(getMockSocket()).not.toBe(initialSocket);
+        });
+
+        it('15. should reliably perform multiple reconnect cycles', () => {
+            manager.connect('ws://test.com');
+
+            const sockets = [];
+
+            let prev = getMockSocket();
+            sockets.push(prev);
+
+            for (let i = 0; i < 3; i++) {
+                prev.onclose!();
+                jest.advanceTimersByTime(2000);
+
+                const current = getMockSocket();
+
+                expect(current).not.toBe(prev);
+                expect(current).not.toBeNull();
+
+                sockets.push(current);
+                prev = current;
+            }
+
+            expect(new Set(sockets).size).toBe(4);
+        });
+    });
+
+    describe('Message Handling & Parsing', () => {
+        it('16. should parse valid JSON and trigger message handlers', () => {
+            const messageHandler = jest.fn();
+            manager.onMessage(messageHandler);
+            manager.connect('ws://test.com');
+
+            const mockData = { type: 'TEST_EVENT', payload: 123 };
+            getMockSocket().onmessage!({ data: JSON.stringify(mockData) });
+
+            expect(messageHandler).toHaveBeenCalledWith(mockData);
+        });
+
+        it('17. should safely catch errors on invalid JSON without crashing', () => {
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const messageHandler = jest.fn();
+            manager.onMessage(messageHandler);
+            manager.connect('ws://test.com');
+
+            expect(() => {
+                getMockSocket().onmessage!({ data: 'invalid{json' });
+            }).not.toThrow();
+
+            expect(messageHandler).not.toHaveBeenCalled();
+            expect(consoleSpy).toHaveBeenCalledWith(
+                'Failed to parse socket message:',
+                expect.any(SyntaxError)
+            );
+
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('Subscriptions & Memory Management', () => {
+        it('18. should support multiple message subscribers simultaneously', () => {
+            const handler1 = jest.fn();
+            const handler2 = jest.fn();
+            manager.onMessage(handler1);
+            manager.onMessage(handler2);
+            manager.connect('ws://test.com');
+
+            const mockData = { id: 1 };
+            getMockSocket().onmessage!({ data: JSON.stringify(mockData) });
+
+            expect(handler1).toHaveBeenCalledWith(mockData);
+            expect(handler2).toHaveBeenCalledWith(mockData);
+        });
+
+        it('19. should allow unsubscribing from messages', () => {
+            const handler = jest.fn();
+            const unsubscribe = manager.onMessage(handler);
+            manager.connect('ws://test.com');
+
+            unsubscribe();
+
+            getMockSocket().onmessage!({ data: JSON.stringify({ id: 1 }) });
+            expect(handler).not.toHaveBeenCalled();
+        });
+
+        it('20. should allow unsubscribing from state changes', () => {
+            const handler = jest.fn();
+            const unsubscribe = manager.onStateChange(handler);
+
+            handler.mockClear();
+
+            unsubscribe();
+
+            manager.connect('ws://test.com');
+
+            expect(handler).not.toHaveBeenCalled();
         });
     });
 });
