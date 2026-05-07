@@ -1,11 +1,11 @@
-import {Ionicons} from '@expo/vector-icons';
-import {useCallback, useState} from 'react';
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
-import {BookRepository} from "@/repos/books";
-import {Book} from "@/types/db";
-import {useFocusEffect} from "expo-router";
+import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BookRepository } from "@/repos/books";
+import { Book } from "@/types/db";
+import { router, useFocusEffect } from "expo-router";
 
-function ReadingHeader({count}: { count: number }) {
+function ReadingHeader({ count }: { count: number }) {
   return (
     <Text style={styles.title}>
       You are reading {count} book{count === 1 ? '' : 's'}
@@ -13,7 +13,7 @@ function ReadingHeader({count}: { count: number }) {
   );
 }
 
-function ReadingCard({book, onPrev, onNext}: { book: Book; onPrev: () => void; onNext: () => void; }) {
+function ReadingCard({ book, onPrev, onNext }: { book: Book; onPrev: () => void; onNext: () => void; }) {
   const current = book.currentPage || 0;
   const total = book.totalPages || 1;
   const progress = total > 0 ? current / total : 0;
@@ -21,17 +21,17 @@ function ReadingCard({book, onPrev, onNext}: { book: Book; onPrev: () => void; o
   return (
     <View style={styles.cardWrapper}>
       <Pressable style={styles.arrowButton} onPress={onPrev}>
-        <Ionicons name="chevron-back" size={18} color="#fff"/>
+        <Ionicons name="chevron-back" size={18} color="#fff" />
       </Pressable>
 
       <View style={styles.card}>
-        <View style={styles.cover}/>
+        <View style={styles.cover} />
 
         <View style={styles.info}>
           <Text style={styles.bookTitle}>{book.title}</Text>
 
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, {width: `${progress * 100}%`}]}/>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
 
           <Text style={styles.pagesText}>
@@ -41,7 +41,7 @@ function ReadingCard({book, onPrev, onNext}: { book: Book; onPrev: () => void; o
       </View>
 
       <Pressable style={styles.arrowButton} onPress={onNext}>
-        <Ionicons name="chevron-forward" size={18} color="#fff"/>
+        <Ionicons name="chevron-forward" size={18} color="#fff" />
       </Pressable>
     </View>
   );
@@ -83,7 +83,7 @@ function ReadingCarousel() {
   if (isLoading) {
     return (
       <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color="#0000ff"/>
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
@@ -91,7 +91,7 @@ function ReadingCarousel() {
   if (books.length === 0) {
     return (
       <View style={styles.container}>
-        <ReadingHeader count={0}/>
+        <ReadingHeader count={0} />
         <View style={styles.centeredContainer}>
           <Text style={styles.emptyText}>You aren't reading any books right now.</Text>
         </View>
@@ -101,7 +101,7 @@ function ReadingCarousel() {
 
   return (
     <View style={styles.container}>
-      <ReadingHeader count={books.length}/>
+      <ReadingHeader count={books.length} />
       <ReadingCard
         book={books[currentIndex]}
         onPrev={handlePrev}
@@ -114,18 +114,51 @@ function ReadingCarousel() {
 export default function HomeScreen() {
   return (
     <View style={styles.screenContainer}>
-      <ReadingCarousel/>
+      <View style={styles.topButtons}>
+        <Pressable
+          style={styles.topButton}
+          onPress={() => router.push('/notifications')}
+        >
+          <Text style={styles.topButtonText}>Notifications</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.topButton}
+          onPress={() => router.push('/socket-status')}
+        >
+          <Text style={styles.topButtonText}>Socket Status</Text>
+        </Pressable>
+      </View>
+
+      <ReadingCarousel />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screenContainer: {flex: 1, backgroundColor: '#F3F3F3', paddingTop: 20},
-  container: {flex: 1, paddingHorizontal: 20, paddingTop: 30},
-  centeredContainer: {padding: 40, justifyContent: 'center', alignItems: 'center'},
-  emptyText: {color: '#666', fontSize: 16},
-  title: {fontSize: 24, fontWeight: '500', color: '#222', marginBottom: 40},
-  cardWrapper: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center'},
+  screenContainer: { flex: 1, backgroundColor: '#F3F3F3', paddingTop: 20 },
+  topButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  topButton: {
+    backgroundColor: '#4A67C7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  topButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 30 },
+  centeredContainer: { padding: 40, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: '#666', fontSize: 16 },
+  title: { fontSize: 24, fontWeight: '500', color: '#222', marginBottom: 40 },
+  cardWrapper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   arrowButton: {
     width: 28,
     height: 28,
@@ -144,10 +177,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center'
   },
-  cover: {width: 110, height: 260, backgroundColor: '#695050', borderRadius: 4, marginRight: 12},
-  info: {flex: 1, justifyContent: 'center'},
-  bookTitle: {fontSize: 28, color: '#222', marginBottom: 40},
-  progressTrack: {height: 8, backgroundColor: '#E9B5B5', borderRadius: 999, overflow: 'hidden', marginBottom: 18},
-  progressFill: {height: '100%', backgroundColor: '#E11D1D', borderRadius: 999},
-  pagesText: {fontSize: 24, color: '#222', marginBottom: 30},
+  cover: { width: 110, height: 260, backgroundColor: '#695050', borderRadius: 4, marginRight: 12 },
+  info: { flex: 1, justifyContent: 'center' },
+  bookTitle: { fontSize: 28, color: '#222', marginBottom: 40 },
+  progressTrack: { height: 8, backgroundColor: '#E9B5B5', borderRadius: 999, overflow: 'hidden', marginBottom: 18 },
+  progressFill: { height: '100%', backgroundColor: '#E11D1D', borderRadius: 999 },
+  pagesText: { fontSize: 24, color: '#222', marginBottom: 30 },
 });

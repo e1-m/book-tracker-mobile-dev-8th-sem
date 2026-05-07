@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -17,7 +18,7 @@
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
-    "expo-sqlite": "^55.0.15",
+    "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "expo-web-browser": "~15.0.10",
     "react": "19.1.0",
@@ -31,8 +32,16 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "jest": "^30.3.0",
+    "jest-expo": "^55.0.16",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-vector-icons/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+    ]
+  }
 }

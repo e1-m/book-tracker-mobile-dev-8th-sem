@@ -3,8 +3,17 @@ import renderer from 'react-test-renderer';
 
 import { MonoText } from '../StyledText';
 
-it(`renders correctly`, () => {
-  const tree = renderer.create(<MonoText>Snapshot test!</MonoText>).toJSON();
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
+  default: () => 'light',
+  useColorScheme: () => 'light',
+}));
+
+it(`renders correctly`, async () => {
+  let tree;
+
+  await renderer.act(async () => {
+    tree = renderer.create(<MonoText>Snapshot test!</MonoText>).toJSON();
+  });
 
   expect(tree).toMatchSnapshot();
 });
